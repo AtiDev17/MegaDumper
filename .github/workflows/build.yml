@@ -1,0 +1,43 @@
+name: Build MegaDumper
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build ${{ matrix.configuration }} - ${{ matrix.platform }}
+    runs-on: windows-latest
+    
+    strategy:
+      matrix:
+        configuration: [Release]
+        platform: [x64]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup NuGet
+      uses: nuget/setup-nuget@v2
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Restore NuGet packages
+      run: nuget restore MegaDumper.sln
+
+    - name: Build Solution
+      run: msbuild MegaDumper.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: MegaDumper-${{ matrix.platform }}-${{ matrix.configuration }}
+        path: |
+          **/bin/${{ matrix.platform }}/${{ matrix.configuration }}/**
+          **/bin/${{ matrix.configuration }}/**
+        if-no-files-found: warn

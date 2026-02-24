@@ -1,0 +1,44 @@
+name: Build and Upload MegaDumper
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: # Allows you to run this manually whenever you want
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v1
+      with:
+        nuget-version: 'latest'
+
+    - name: Restore NuGet Packages
+      run: nuget restore MegaDumper.sln
+
+    - name: Build Solution (Release x64)
+      run: |
+        msbuild MegaDumper.sln /p:Configuration=Release /p:Platform=x64 /m
+
+    - name: Build Solution (Release x86)
+      run: |
+        msbuild MegaDumper.sln /p:Configuration=Release /p:Platform=x86 /m
+
+    - name: Upload MegaDumper Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: MegaDumper-Binaries
+        path: |
+          **/bin/Release/x64/
+          **/bin/Release/x86/
+        if-no-files-found: error
